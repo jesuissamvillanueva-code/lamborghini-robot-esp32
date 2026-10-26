@@ -1,0 +1,888 @@
+#include <WiFi.h>
+#include <WebServer.h>
+
+// =====================================================
+//              LAMBORGHINI ROBOT
+// =====================================================
+
+// WIFI
+const char* ssid = "Lamborghini Robot";
+const char* password = "123456789";
+
+// IP FIJA
+IPAddress local_IP(192, 168, 4, 1);
+IPAddress gateway(192, 168, 4, 1);
+IPAddress subnet(255, 255, 255, 0);
+
+// SERVIDOR
+WebServer server(80);
+
+// SEGURIDAD
+unsigned long ultimaOrdenMovimiento = 0;
+const unsigned long TIEMPO_MAXIMO_SIN_ORDEN = 700;
+
+// AJUSTE EXCLUSIVO DE GIRO: 200 ms encendido por cada pulso
+// El joystick renueva la orden cada 250 ms, dejando 50 ms de pausa.
+const unsigned long TIEMPO_GIRO = 200;
+unsigned long finPulsoGiro = 0;
+bool giroTemporizado = false;
+
+// MOTOR A: ADELANTE Y ATRAS
+const int IN1 = 16;
+const int IN2 = 17;
+
+// MOTOR B: IZQUIERDA Y DERECHA
+const int IN3 = 18;
+const int IN4 = 19;
+
+// LED
+const int LED_AZUL = 2;
+
+
+// =====================================================
+//                    INTERFAZ HTML
+// =====================================================
+
+const char html_page[] PROGMEM = R"rawliteral(
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#080b10">
+
+<title>LAMBORGHINI ROBOT</title>
+
+<style>
+:root{
+--cyan:#55c8ff;
+--blue:#147bd1;
+--red:#ff405d;
+}
+
+*{box-sizing:border-box}
+
+html{
+min-height:100%;
+background:#030407;
+}
+
+body{
+margin:0;
+min-height:100vh;
+padding:24px 14px;
+font-family:system-ui,Arial,sans-serif;
+color:#edf5ff;
+text-align:center;
+overflow-x:hidden;
+background:linear-gradient(135deg,#030407,#111923,#05070b);
+}
+
+body:before{
+content:"";
+position:fixed;
+inset:0;
+pointer-events:none;
+opacity:.20;
+background-image:
+linear-gradient(rgba(84,186,255,.12) 1px,transparent 1px),
+linear-gradient(90deg,rgba(84,186,255,.12) 1px,transparent 1px);
+background-size:34px 34px;
+}
+
+header,main,footer{
+position:relative;
+z-index:1;
+}
+
+.brand{
+width:76px;
+height:76px;
+margin:0 auto 15px;
+display:grid;
+place-items:center;
+border:1px solid rgba(84,186,255,.6);
+border-radius:20px;
+background:linear-gradient(145deg,#182b40,#05070b);
+box-shadow:0 0 25px rgba(22,120,211,.3);
+color:var(--cyan);
+font-size:34px;
+font-weight:950;
+}
+
+h1{
+margin:0;
+font-size:clamp(30px,8vw,48px);
+font-weight:950;
+letter-spacing:.09em;
+color:white;
+}
+
+h1 span{color:var(--cyan)}
+
+.subtitle{
+margin-top:10px;
+font-size:10px;
+font-weight:850;
+letter-spacing:.23em;
+color:#91bce0;
+}
+
+.chip{
+display:inline-flex;
+align-items:center;
+gap:8px;
+margin-top:16px;
+padding:8px 14px;
+border:1px solid rgba(84,186,255,.3);
+border-radius:30px;
+background:rgba(20,70,112,.2);
+font-size:10px;
+font-weight:850;
+letter-spacing:.12em;
+color:#b6e0ff;
+}
+
+.dot{
+width:8px;
+height:8px;
+border-radius:50%;
+background:#70d6ff;
+box-shadow:0 0 10px #70d6ff;
+}
+
+.panel{
+width:min(100%,440px);
+margin:25px auto 0;
+padding:22px 17px;
+border:1px solid rgba(84,186,255,.27);
+border-radius:24px;
+background:linear-gradient(145deg,#111b29,#05070b);
+box-shadow:0 18px 50px rgba(0,0,0,.6);
+}
+
+.panel-title{
+margin:0 0 7px;
+font-size:13px;
+font-weight:950;
+letter-spacing:.18em;
+}
+
+.panel-sub{
+margin:0 0 17px;
+font-size:11px;
+color:#91a5ba;
+}
+
+.status{
+min-height:43px;
+display:flex;
+align-items:center;
+justify-content:center;
+gap:9px;
+margin-bottom:18px;
+padding:10px;
+border:1px solid rgba(84,186,255,.2);
+border-radius:12px;
+background:#03080e;
+color:var(--cyan);
+font-size:11px;
+font-weight:900;
+letter-spacing:.08em;
+}
+
+.status-indicator{
+width:8px;
+height:8px;
+border-radius:50%;
+background:#b8ff5a;
+box-shadow:0 0 10px #b8ff5a;
+}
+
+.joystick-wrap{
+display:flex;
+justify-content:center;
+padding:5px 0 15px;
+}
+
+.joystick{
+position:relative;
+width:min(72vw,270px);
+height:min(72vw,270px);
+border-radius:50%;
+border:1px solid rgba(84,186,255,.65);
+background:radial-gradient(circle,#172e45,#0b1826 65%,#03060b);
+box-shadow:
+0 0 0 8px rgba(22,120,211,.06),
+0 0 35px rgba(22,120,211,.2),
+inset 0 0 25px #000;
+touch-action:none;
+user-select:none;
+-webkit-user-select:none;
+}
+
+.joystick:before,.joystick:after{
+content:"";
+position:absolute;
+background:rgba(84,186,255,.15);
+pointer-events:none;
+}
+
+.joystick:before{
+width:1px;
+height:86%;
+left:50%;
+top:7%;
+}
+
+.joystick:after{
+height:1px;
+width:86%;
+top:50%;
+left:7%;
+}
+
+.direction{
+position:absolute;
+z-index:1;
+color:#a1bfd9;
+font-size:19px;
+font-weight:950;
+}
+
+.up{
+top:10px;
+left:50%;
+transform:translateX(-50%);
+}
+
+.down{
+bottom:10px;
+left:50%;
+transform:translateX(-50%);
+}
+
+.left{
+left:12px;
+top:50%;
+transform:translateY(-50%);
+}
+
+.right{
+right:12px;
+top:50%;
+transform:translateY(-50%);
+}
+
+.stick{
+position:absolute;
+z-index:2;
+left:50%;
+top:50%;
+width:34%;
+height:34%;
+transform:translate(-50%,-50%);
+border-radius:50%;
+border:2px solid #c4e7ff;
+background:radial-gradient(circle at 32% 25%,#d2efff,#65bfff 25%,#1678d3 65%,#073a69);
+box-shadow:
+0 0 0 7px rgba(84,186,255,.1),
+0 9px 20px #000;
+pointer-events:none;
+}
+
+.stick.active{
+box-shadow:0 0 25px #54baff,0 9px 20px #000;
+}
+
+.stop{
+display:block;
+width:100%;
+margin:8px auto 0;
+padding:15px;
+border:1px solid rgba(255,64,93,.8);
+border-radius:13px;
+background:linear-gradient(135deg,#8c2037,#310b15);
+color:white;
+font-size:13px;
+font-weight:950;
+letter-spacing:.15em;
+touch-action:manipulation;
+}
+
+.stop:active{transform:scale(.98)}
+
+.tip{
+margin:16px 2px 0;
+color:#91a1b3;
+font-size:11px;
+line-height:1.7;
+}
+
+footer{
+margin:25px auto 0;
+color:#91a1b3;
+font-size:10px;
+line-height:1.8;
+}
+
+.credit{color:#c4d7e9}
+
+@media(prefers-reduced-motion:reduce){
+*{animation:none!important;transition:none!important}
+}
+</style>
+</head>
+
+<body>
+
+<header>
+
+<div class="brand">L</div>
+
+<h1>LAMBORGHINI <span>ROBOT</span></h1>
+
+<div class="subtitle">
+SISTEMA DE CONTROL ROBÓTICO ESP32
+</div>
+
+<div class="chip">
+<i class="dot"></i>
+CONEXIÓN LOCAL ACTIVA
+</div>
+
+</header>
+
+<main class="panel">
+
+<h2 class="panel-title">MANDO DIRECCIONAL</h2>
+
+<p class="panel-sub">
+Control independiente de motores
+</p>
+
+<div class="status" role="status" aria-live="polite">
+<span class="status-indicator" id="indicator"></span>
+<span id="status">SISTEMA EN ESPERA</span>
+</div>
+
+<div class="joystick-wrap">
+
+<div class="joystick" id="joystick">
+
+<span class="direction up">▲</span>
+<span class="direction down">▼</span>
+<span class="direction left">◀</span>
+<span class="direction right">▶</span>
+
+<div class="stick" id="stick"></div>
+
+</div>
+
+</div>
+
+<button class="stop" id="stopButton">
+■ &nbsp; FRENAR / DETENER
+</button>
+
+<p class="tip">
+MOTOR A: ADELANTE Y ATRÁS<br>
+MOTOR B: IZQUIERDA Y DERECHA<br><br>
+Mantén presionado el joystick para moverte.
+Al soltarlo, el robot se detendrá.
+</p>
+
+</main>
+
+<footer>
+LAMBORGHINI ROBOT · CONTROL INALÁMBRICO<br>
+<span class="credit">
+Diseñado por: Samuel Villanueva C. © 2026
+</span>
+</footer>
+
+<script>
+(function(){
+
+const pad=document.getElementById('joystick');
+const stick=document.getElementById('stick');
+const status=document.getElementById('status');
+const indicator=document.getElementById('indicator');
+const stopButton=document.getElementById('stopButton');
+
+let pointerId=null;
+let current='stop';
+let lastSent=0;
+let heartbeat=null;
+let requestChain=Promise.resolve();
+
+const labels={
+forward:'MOTOR A: ADELANTE',
+backward:'MOTOR A: ATRÁS',
+left:'MOTOR B: IZQUIERDA',
+right:'MOTOR B: DERECHA',
+stop:'MOTORES DETENIDOS'
+};
+
+function sendCommand(command,force){
+
+const now=Date.now();
+
+if(!force && command===current && now-lastSent<180)return;
+
+current=command;
+lastSent=now;
+
+status.textContent=labels[command];
+
+indicator.style.background=
+command==='stop'?'#b8ff5a':'#35e7ff';
+
+indicator.style.boxShadow=
+command==='stop'?'0 0 10px #b8ff5a':'0 0 10px #35e7ff';
+
+requestChain=requestChain
+.catch(function(){})
+.then(function(){
+
+return fetch('/'+command,{
+method:'GET',
+cache:'no-store',
+credentials:'same-origin'
+});
+
+})
+.then(function(response){
+
+if(!response.ok)throw new Error('Error HTTP');
+
+})
+.catch(function(){
+
+status.textContent='SIN RESPUESTA DEL ROBOT';
+indicator.style.background='#ff4768';
+indicator.style.boxShadow='0 0 10px #ff4768';
+
+});
+
+}
+
+function centerStick(){
+
+stick.style.left='50%';
+stick.style.top='50%';
+stick.classList.remove('active');
+
+}
+
+function stopHeartbeat(){
+
+if(heartbeat!==null){
+clearInterval(heartbeat);
+heartbeat=null;
+}
+
+}
+
+function stop(){
+
+stopHeartbeat();
+pointerId=null;
+centerStick();
+sendCommand('stop',true);
+
+}
+
+function move(event){
+
+const rect=pad.getBoundingClientRect();
+
+const cx=rect.left+rect.width/2;
+const cy=rect.top+rect.height/2;
+
+let dx=event.clientX-cx;
+let dy=event.clientY-cy;
+
+const max=rect.width*.31;
+const dist=Math.hypot(dx,dy);
+
+if(dist>max){
+dx=dx/dist*max;
+dy=dy/dist*max;
+}
+
+stick.style.left='calc(50% + '+dx+'px)';
+stick.style.top='calc(50% + '+dy+'px)';
+stick.classList.add('active');
+
+if(Math.hypot(dx,dy)<max*.22){
+sendCommand('stop',true);
+return;
+}
+
+const angle=Math.atan2(dy,dx)*180/Math.PI;
+
+let command;
+
+if(angle>=-45 && angle<45){
+command='right';
+}
+else if(angle>=45 && angle<135){
+command='backward';
+}
+else if(angle>=-135 && angle<-45){
+command='forward';
+}
+else{
+command='left';
+}
+
+sendCommand(command,false);
+
+}
+
+pad.addEventListener('pointerdown',function(e){
+
+e.preventDefault();
+
+if(pointerId!==null)stop();
+
+pointerId=e.pointerId;
+
+try{
+pad.setPointerCapture(pointerId);
+}catch(_){}
+
+move(e);
+
+stopHeartbeat();
+
+heartbeat=setInterval(function(){
+
+if(pointerId!==null && current!=='stop'){
+sendCommand(current,true);
+}
+
+},250);
+
+});
+
+pad.addEventListener('pointermove',function(e){
+
+if(e.pointerId===pointerId){
+e.preventDefault();
+move(e);
+}
+
+});
+
+pad.addEventListener('pointerup',function(e){
+
+if(e.pointerId===pointerId)stop();
+
+});
+
+pad.addEventListener('pointercancel',function(e){
+
+if(e.pointerId===pointerId)stop();
+
+});
+
+pad.addEventListener('lostpointercapture',function(){
+
+if(pointerId!==null)stop();
+
+});
+
+window.addEventListener('pointerup',function(){
+
+if(pointerId!==null)stop();
+
+});
+
+window.addEventListener('blur',function(){
+
+if(pointerId!==null)stop();
+
+});
+
+document.addEventListener('visibilitychange',function(){
+
+if(document.hidden)stop();
+
+});
+
+stopButton.addEventListener('click',stop);
+
+window.addEventListener('pagehide',function(){
+
+stopHeartbeat();
+
+fetch('/stop',{
+method:'GET',
+cache:'no-store',
+keepalive:true
+}).catch(function(){});
+
+});
+
+})();
+</script>
+
+</body>
+</html>
+)rawliteral";
+
+
+// =====================================================
+//                 CONTROL DE MOTORES
+// =====================================================
+
+// DETENER LOS DOS MOTORES
+void stopMotors(){
+
+  digitalWrite(IN1, LOW);
+  digitalWrite(IN2, LOW);
+
+  digitalWrite(IN3, LOW);
+  digitalWrite(IN4, LOW);
+
+  giroTemporizado = false;
+
+}
+
+
+// MOTOR A: ADELANTE
+void moveForward(){
+
+  stopMotors();
+
+  digitalWrite(IN1, HIGH);
+  digitalWrite(IN2, LOW);
+
+}
+
+
+// MOTOR A: ATRAS
+void moveBackward(){
+
+  stopMotors();
+
+  digitalWrite(IN1, LOW);
+  digitalWrite(IN2, HIGH);
+
+}
+
+
+// MOTOR B: IZQUIERDA
+void turnLeft(){
+
+  stopMotors();
+
+  digitalWrite(IN3, LOW);
+  digitalWrite(IN4, HIGH);
+
+  // Apaga el motor de giro al terminar el pulso de 200 ms.
+  giroTemporizado = true;
+  finPulsoGiro = millis() + TIEMPO_GIRO;
+
+}
+
+
+// MOTOR B: DERECHA
+void turnRight(){
+
+  stopMotors();
+
+  digitalWrite(IN3, HIGH);
+  digitalWrite(IN4, LOW);
+
+  // Apaga el motor de giro al terminar el pulso de 200 ms.
+  giroTemporizado = true;
+  finPulsoGiro = millis() + TIEMPO_GIRO;
+
+}
+
+
+// =====================================================
+//                  PAGINA PRINCIPAL
+// =====================================================
+
+void handleRoot(){
+
+  server.send_P(
+    200,
+    "text/html; charset=utf-8",
+    html_page
+  );
+
+}
+
+
+// =====================================================
+//                    CONFIGURACION
+// =====================================================
+
+void setup(){
+
+  Serial.begin(115200);
+
+  ultimaOrdenMovimiento = millis();
+
+  // CONFIGURAR PINES DE MOTORES
+  pinMode(IN1, OUTPUT);
+  pinMode(IN2, OUTPUT);
+
+  pinMode(IN3, OUTPUT);
+  pinMode(IN4, OUTPUT);
+
+  // CONFIGURAR LED
+  pinMode(LED_AZUL, OUTPUT);
+
+  stopMotors();
+
+  digitalWrite(LED_AZUL, LOW);
+
+
+  // ===========================================
+  //         WIFI CON IP FIJA
+  // ===========================================
+
+  WiFi.mode(WIFI_AP);
+
+  if(!WiFi.softAPConfig(local_IP, gateway, subnet)){
+
+    Serial.println("ERROR: No se pudo configurar IP fija");
+
+  }
+
+  if(!WiFi.softAP(ssid, password)){
+
+    Serial.println("ERROR: No se pudo crear la red WiFi");
+
+  }
+  else{
+
+    Serial.println();
+    Serial.println("==============================");
+    Serial.println("     LAMBORGHINI ROBOT");
+    Serial.println("==============================");
+
+    Serial.print("WIFI: ");
+    Serial.println(ssid);
+
+    Serial.print("PASSWORD: ");
+    Serial.println(password);
+
+    Serial.print("IP FIJA: ");
+    Serial.println(WiFi.softAPIP());
+
+    Serial.println("ABRIR: http://192.168.4.1");
+
+    digitalWrite(LED_AZUL, HIGH);
+
+  }
+
+
+  // ===========================================
+  //              RUTAS DEL SERVIDOR
+  // ===========================================
+
+  server.on("/", HTTP_GET, handleRoot);
+
+
+  // MOTOR A: ADELANTE
+  server.on("/forward", HTTP_GET, [](){
+
+    ultimaOrdenMovimiento = millis();
+
+    moveForward();
+
+    server.send(200, "text/plain", "FORWARD");
+
+  });
+
+
+  // MOTOR A: ATRAS
+  server.on("/backward", HTTP_GET, [](){
+
+    ultimaOrdenMovimiento = millis();
+
+    moveBackward();
+
+    server.send(200, "text/plain", "BACKWARD");
+
+  });
+
+
+  // MOTOR B: IZQUIERDA
+  server.on("/left", HTTP_GET, [](){
+
+    ultimaOrdenMovimiento = millis();
+
+    turnLeft();
+
+    server.send(200, "text/plain", "LEFT");
+
+  });
+
+
+  // MOTOR B: DERECHA
+  server.on("/right", HTTP_GET, [](){
+
+    ultimaOrdenMovimiento = millis();
+
+    turnRight();
+
+    server.send(200, "text/plain", "RIGHT");
+
+  });
+
+
+  // DETENER MOTORES
+  server.on("/stop", HTTP_GET, [](){
+
+    ultimaOrdenMovimiento = millis();
+
+    stopMotors();
+
+    server.send(200, "text/plain", "STOP");
+
+  });
+
+
+  // INICIAR SERVIDOR
+  server.begin();
+
+  Serial.println("Servidor web iniciado");
+  Serial.println("Robot listo para funcionar");
+
+}
+
+
+// =====================================================
+//                     BUCLE PRINCIPAL
+// =====================================================
+
+void loop(){
+
+  server.handleClient();
+
+  // AJUSTE EXCLUSIVO DE IZQUIERDA Y DERECHA:
+  // cada pulso de giro dura 200 ms; luego se detiene.
+  if(giroTemporizado &&
+     (long)(millis() - finPulsoGiro) >= 0){
+
+    stopMotors();
+
+  }
+
+  // PARADA AUTOMATICA DE SEGURIDAD
+  if(millis() - ultimaOrdenMovimiento >
+     TIEMPO_MAXIMO_SIN_ORDEN){
+
+    stopMotors();
+
+  }
+
+}
