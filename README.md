@@ -24,17 +24,17 @@ El desarrollo de este robot combina el diseño automotriz a escala (carrocería 
 ### 🏎️ Vista Exterior y Carrocería Finalizada
 | Carrocería Estilo Lamborghini (Montada) | Vista de Perfil General |
 | :---: | :---: |
-| ![Lamborghini Armado Chasis](assets/Lamborghini_armado_chasis.jpg) | ![Lamborghini Costado](assets/Lamborghini_costado.jpg) |
+| ![Lamborghini Armado Chasis](assets/Lamborghini_armado_chasis.jpg)[cite: 12] | ![Lamborghini Costado](assets/Lamborghini_costado.jpg)[cite: 12] |
 
 ### 🔍 Detalles del Chasis y Componentes
 | Vista Lateral Ampliada del Sistema | Motor DC de Tracción (3V - 6V) |
 | :---: | :---: |
-| ![Lamborghini Costado Ampliado](assets/Lamborghini_costado_apmqliado.jpg) | ![Motor DC 3-6V](assets/motor_dc_3-6v.jpg) |
+| ![Lamborghini Costado Ampliado](assets/Lamborghini_costado_ampliado.jpg)[cite: 12] | ![Motor DC 3-6V](assets/motor_dc_3-6v.jpg)[cite: 12] |
 
 ### 🛠️ Cableado y Perspectiva Superior (Cenital)
 | Proceso de Conexión y Electrónica | Vista Superior (Sky View del Chasis) |
 | :---: | :---: |
-| ![Lamborghini Proceso Cableado](assets/Lamborghini_proceso_cableado.jpg) | ![Lamborghini View Sky](assets/Lamborghini_view_sky.jpg) |
+| ![Lamborghini Proceso Cableado](assets/Lamborghini_proceso_cableado.jpg)[cite: 12] | ![Lamborghini View Sky](assets/Lamborghini_view_sky.jpg)[cite: 12] |
 
 ---
 
@@ -63,7 +63,7 @@ El desarrollo de este robot combina el diseño automotriz a escala (carrocería 
 ## 📊 **Diagramas y Documentación Técnica**
 
 El esquema de conexiones eléctricas y la distribución de pines se encuentran detallados en el plano oficial del proyecto:
-- 📄 [Descargar / Ver Diagrama de Conexiones del Carro Móvil (PDF)](hardware/diagrama_carro_movil.pdf)
+- 📄 [Descargar / Ver Diagrama de Conexiones del Carro Móvil (PDF)](hardware/diagrama_carro_movil.pdf)[cite: 12]
 
 ---
 
@@ -82,7 +82,7 @@ El esquema de conexiones eléctricas y la distribución de pines se encuentran d
 ## 🚀 **Guía de Instalación y Uso**
 
 1. **Clonación o Descarga:** Obtén el contenido de este repositorio en tu equipo de trabajo.
-2. **Carga de Firmware:** Abre el archivo de código fuente ubicado en la carpeta `codigo/` o `src/` utilizando el **Arduino IDE** y súbelo al ESP32 (Configurar velocidad del monitor serie a `115200` baudios).
+2. **Carga de Firmware:** Abre el archivo de código fuente ubicado en la carpeta `src/` utilizando el **Arduino IDE** y súbelo al ESP32 (Configurar velocidad del monitor serie a `115200` baudios).
 3. **Punto de Acceso Wi-Fi:** Enciende el robot mediante el interruptor general. El ESP32 generará una red inalámbrica propia de acceso directo.
 4. **Pilotaje Web:** Conecta tu dispositivo móvil a la red del robot, abre tu navegador web e ingresa a la dirección IP asignada (por ejemplo, `192.168.4.1` o la IP configurada en el servidor) para interactuar con el control táctil.
 
