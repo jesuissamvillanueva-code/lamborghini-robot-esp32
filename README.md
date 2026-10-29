@@ -24,17 +24,17 @@ El desarrollo de este robot combina el diseño automotriz a escala (carrocería 
 ### 🏎️ Vista Exterior y Carrocería Finalizada
 | Carrocería Estilo Lamborghini (Montada) | Vista de Perfil General |
 | :---: | :---: |
-| ![Lamborghini Armado Chasis](assets/Lamborghini_armado_chasis.jpg)[cite: 12] | ![Lamborghini Costado](assets/Lamborghini_costado.jpg)[cite: 12] |
+| ![Lamborghini Armado Chasis](assets/Lamborghini_armado_chasis.jpg) | ![Lamborghini Costado](assets/Lamborghini_costado.jpg) |
 
 ### 🔍 Detalles del Chasis y Componentes
 | Vista Lateral Ampliada del Sistema | Motor DC de Tracción (3V - 6V) |
 | :---: | :---: |
-| ![Lamborghini Costado Ampliado](assets/Lamborghini_costado_ampliado.jpg)[cite: 12] | ![Motor DC 3-6V](assets/motor_dc_3-6v.jpg)[cite: 12] |
+| ![Lamborghini Costado Ampliado](assets/Lamborghini_costado_ampliado.jpg) | ![Motor DC 3-6V](assets/motor_dc_3-6v.jpg) |
 
 ### 🛠️ Cableado y Perspectiva Superior (Cenital)
 | Proceso de Conexión y Electrónica | Vista Superior (Sky View del Chasis) |
 | :---: | :---: |
-| ![Lamborghini Proceso Cableado](assets/Lamborghini_proceso_cableado.jpg)[cite: 12] | ![Lamborghini View Sky](assets/Lamborghini_view_sky.jpg)[cite: 12] |
+| ![Lamborghini Proceso Cableado](assets/Lamborghini_proceso_cableado.jpg) | ![Lamborghini View Sky](assets/Lamborghini_view_sky.jpg) |
 
 ---
 
@@ -63,7 +63,7 @@ El desarrollo de este robot combina el diseño automotriz a escala (carrocería 
 ## 📊 **Diagramas y Documentación Técnica**
 
 El esquema de conexiones eléctricas y la distribución de pines se encuentran detallados en el plano oficial del proyecto:
-- 📄 [Descargar / Ver Diagrama de Conexiones del Carro Móvil (PDF)](hardware/diagrama_carro_movil.pdf)[cite: 12]
+- 📄 [Descargar / Ver Diagrama de Conexiones del Carro Móvil (PDF)](hardware/diagrama_carro_movil.pdf)
 
 ---
 
